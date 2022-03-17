@@ -1,5 +1,6 @@
 package xyz.madki.dilmiltest.repos
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import xyz.madki.dilmiltest.api.MemesApi
@@ -7,6 +8,7 @@ import xyz.madki.dilmiltest.api.model.MemeApiModel
 import xyz.madki.dilmiltest.api.model.MemesResponse
 import xyz.madki.dilmiltest.db.MemesDao
 import xyz.madki.dilmiltest.db.model.Meme
+import java.lang.Exception
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,19 +20,23 @@ class MemesRepository @Inject constructor(
     fun refresh(): Flow<RequestStatus> {
         return flow {
             emit(RequestStatus.LOADING)
-            val result = memesApi.getMemes()
-            if (result.isSuccessful) {
-                val body = result.body()
-                if (body?.success != true) {
-                    emit(RequestStatus.ERROR)
+            try {
+                val result = memesApi.getMemes()
+                if (result.isSuccessful) {
+                    val body = result.body()
+                    if (body?.success != true) {
+                        emit(RequestStatus.ERROR)
+                    } else {
+                        memesDao.deleteAll()
+                        memesDao.insertAll(
+                            body.getMemes().map(MemeApiModel::toMeme)
+                        )
+                        emit(RequestStatus.DONE)
+                    }
                 } else {
-                    memesDao.deleteAll()
-                    memesDao.insertAll(
-                        body.getMemes().map(MemeApiModel::toMeme)
-                    )
-                    emit(RequestStatus.DONE)
+                    emit(RequestStatus.ERROR)
                 }
-            } else {
+            } catch (ex: Exception) {
                 emit(RequestStatus.ERROR)
             }
         }
