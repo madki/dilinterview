@@ -20,9 +20,6 @@ class MemesViewModel @Inject constructor(
     val memes =
             getMemesUseCase.getMemesResult()
                 .flowOn(Dispatchers.IO)
-                .onEach {
-                    Log.d("MemesViewModel", it.toString())
-                }
                 .stateIn(
                     viewModelScope,
                     SharingStarted.Eagerly,
